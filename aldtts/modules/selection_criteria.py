@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 import numpy as np
 from alts.core.data.data_pool import DataPool
 
-from alts.core.query.selection_criteria import SelectionCriteria, NoSelectionCriteria
+from alts.core.query.selection_criteria import SelectionCriteria
+from alts.modules.query.selection_criteria import NoSelectionCriteria
 from aldtts.modules.experiment_modules import DependencyExperiment, InterventionDependencyExperiment
 
 

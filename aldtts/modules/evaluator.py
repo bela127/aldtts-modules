@@ -2,12 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from aldtts.modules.experiment_modules import DependencyExperiment
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from alts.core.evaluator import LogingEvaluator, Evaluate
 
 import numpy as np
 from matplotlib import pyplot as plot # type: ignore
 import os
+
+from alts.core.configuration import post_init, pre_init, init
 
 
 if TYPE_CHECKING:
@@ -23,8 +25,8 @@ class PlotQueriesEvaluator(LogingEvaluator):
     folder: str = "fig"
     fig_name:str = "Query distribution 2d"
 
-    queries: NDArray[Number, Shape["2, query_nr, ... query_dim"]] = field(init=False, default = None)
-    iteration: int = field(init = False, default = 0)
+    queries: NDArray[Number, Shape["2, query_nr, ... query_dim"]] = pre_init(default=None)
+    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -68,7 +70,7 @@ class PlotScoresEvaluator(LogingEvaluator):
     folder: str = "fig"
     fig_name:str = "Scores 2d"
 
-    iteration: int = field(init = False, default = 0)
+    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -105,8 +107,8 @@ class PlotTestPEvaluator(LogingEvaluator):
     folder: str = "fig"
     fig_name:str = "P-value"
 
-    ps: List[float] = field(init=False, default_factory=list)
-    iteration: int = field(init = False, default = 0)
+    ps: List[float] = pre_init(default_factory=list)
+    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -142,9 +144,9 @@ class BoxPlotTestPEvaluator(LogingEvaluator):
     folder: str = "fig"
     fig_name:str = "Boxplot p-value"
 
-    ps: List[float] = field(init=False, default_factory=list)
-    pss: List[float] = field(init=False, default_factory=list)
-    iteration: int = field(init = False, default = 0)
+    ps: List[float] = pre_init(default_factory=list)
+    pss: List[float] = pre_init(default_factory=list)
+    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -193,7 +195,7 @@ class LogPValueEvaluator(LogingEvaluator):
     folder: str = "log"
     file_name: str = "PValue"
 
-    ps: List[float] = field(init=False, default_factory=list)
+    ps: List[float] = post_init()
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -211,7 +213,6 @@ class LogPValueEvaluator(LogingEvaluator):
     
     def save_test_result(self, result: NDArray):
         t,p = result
-
         self.ps.append(p[0])
 
     def log_test_results(self, exp_nr):
@@ -224,7 +225,7 @@ class LogScoresEvaluator(LogingEvaluator):
     folder: str = "log"
     file_name: str = "PseudoQueryScore"
 
-    pqs: List[Tuple[NDArray, NDArray]] = field(init=False, default_factory=list)
+    pqs: List[Tuple[NDArray, NDArray]] = pre_init(default_factory=list)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -258,7 +259,7 @@ class LogActualQueryScoresEvaluator(LogingEvaluator):
     folder: str = "log"
     file_name:str = "ActualQueryScores"
 
-    acs: List[Tuple[NDArray, NDArray]] = field(init=False, default_factory=list)
+    acs: List[Tuple[NDArray, NDArray]] = pre_init(default_factory=list)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
