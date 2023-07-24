@@ -1,6 +1,6 @@
 from __future__ import annotations
 import imp
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Type
 
 from dataclasses import dataclass, field
 
@@ -10,7 +10,7 @@ from alts.core.data.data_pool import DataPool
 from alts.core.query.selection_criteria import SelectionCriteria
 from alts.modules.query.selection_criteria import NoSelectionCriteria
 from aldtts.modules.experiment_modules import DependencyExperiment, InterventionDependencyExperiment
-
+from alts.core.configuration import post_init
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -21,11 +21,11 @@ if TYPE_CHECKING:
 
 @dataclass
 class QueryTestNoSelectionCritera(NoSelectionCriteria):
-    dependency_test: Optional[DependencyTest] = field(init=False, default=None)
+    dependency_test: DependencyTest = post_init()
     
     @property
-    def query_pool(self):
-        return self.dependency_test.data_sampler.query_pool
+    def query_constrain(self):
+        return self.dependency_test.data_sampler.query_constrain
 
     
     def __call__(self, exp_modules = None, **kwargs) -> Self:
