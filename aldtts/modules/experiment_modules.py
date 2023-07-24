@@ -27,9 +27,6 @@ class DependencyExperiment(InitQueryExperimentModules):
         super().__post_init__()
         self.dependency_test = self.dependency_test(exp_modules=self)
 
-    def run(self):
-        t,p = self.dependency_test.test()
-
 
 @dataclass
 class InterventionDependencyExperiment(DependencyExperiment):
@@ -38,7 +35,4 @@ class InterventionDependencyExperiment(DependencyExperiment):
     def __post_init__(self):
         super().__post_init__()
         self.test_interpolator = self.test_interpolator(self)
-
-    def run(self):
-        t,p = self.dependency_test.test()
 

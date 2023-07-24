@@ -17,7 +17,7 @@ from aldtts.modules.experiment_modules import DependencyExperiment
 from alts.modules.data_sampler import KDTreeKNNDataSampler, KDTreeRegionDataSampler
 from alts.modules.query.query_sampler import LastQuerySampler, RandomChoiceQuerySampler, UniformQuerySampler, LatinHypercubeQuerySampler
 from aldtts.modules.multi_sample_test import KWHMultiSampleTest
-from aldtts.modules.dependency_test import DependencyTest
+from aldtts.modules.dependency_test import SampleTest
 from alts.core.query.query_selector import ResultQuerySelector
 from alts.modules.query.query_decider import ThresholdQueryDecider
 from alts.modules.query.query_optimizer import NoQueryOptimizer
@@ -51,7 +51,7 @@ class DTBlueprint(Blueprint):
             ),
             query_decider=ThresholdQueryDecider(threshold=0.0),
             ),
-        dependency_test=DependencyTest(
+        dependency_test=SampleTest(
             query_sampler = LastQuerySampler(),
             data_sampler = KDTreeRegionDataSampler(0.05),
             multi_sample_test=KWHMultiSampleTest()
