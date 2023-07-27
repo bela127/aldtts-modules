@@ -26,14 +26,13 @@ class PlotQueriesEvaluator(LogingEvaluator):
     fig_name:str = "Query distribution 2d"
 
     queries: NDArray[Number, Shape["2, query_nr, ... query_dim"]] = pre_init(default=None)
-    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
 
 
-        self.experiment.oracle.query = Evaluate(self.experiment.oracle.query)
-        self.experiment.oracle.query.pre(self.plot_queries)
+        self.experiment.oracles.add = Evaluate(self.experiment.oracles.add)
+        self.experiment.oracles.add.pre(self.plot_queries)
 
         self.queries: NDArray[Number, Shape["2, query_nr, ... query_dim"]] = None
 
@@ -62,15 +61,11 @@ class PlotQueriesEvaluator(LogingEvaluator):
             plot.savefig(f'{self.path}/{self.fig_name}_{self.iteration:05d}.png')
             plot.clf()
 
-        self.iteration += 1
-
 @dataclass
 class PlotScoresEvaluator(LogingEvaluator):
     interactive: bool = False
     folder: str = "fig"
     fig_name:str = "Scores 2d"
-
-    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -95,8 +90,6 @@ class PlotScoresEvaluator(LogingEvaluator):
             plot.savefig(f'{self.path}/{self.fig_name}_{self.iteration:05d}.png')
             plot.clf()
 
-        self.iteration += 1
-
         return scores
 
 
@@ -108,7 +101,6 @@ class PlotTestPEvaluator(LogingEvaluator):
     fig_name:str = "P-value"
 
     ps: List[float] = pre_init(default_factory=list)
-    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -135,8 +127,6 @@ class PlotTestPEvaluator(LogingEvaluator):
             plot.savefig(f'{self.path}/{self.fig_name}_{self.iteration:05d}.png')
             plot.clf()
 
-        self.iteration += 1
-
 
 @dataclass
 class BoxPlotTestPEvaluator(LogingEvaluator):
@@ -146,7 +136,6 @@ class BoxPlotTestPEvaluator(LogingEvaluator):
 
     ps: List[float] = pre_init(default_factory=list)
     pss: List[float] = pre_init(default_factory=list)
-    iteration: int = pre_init(default=0)
 
     def register(self, experiment: Experiment):
         super().register(experiment)
@@ -185,8 +174,6 @@ class BoxPlotTestPEvaluator(LogingEvaluator):
         else:
             plot.savefig(f'{self.path}/{self.fig_name}_{self.iteration:05d}.png',dpi=500)
             plot.clf()
-
-        self.iteration += 1
 
 
 @dataclass
@@ -230,8 +217,8 @@ class LogScoresEvaluator(LogingEvaluator):
     def register(self, experiment: Experiment):
         super().register(experiment)
         
-        self.experiment.query_optimizer.selection_criteria.query = Evaluate(self.experiment.query_optimizer.selection_criteria.query)
-        self.experiment.query_optimizer.selection_criteria.query.warp(self.log_scores)
+        self.experiment.experiment_modules.query_selector.query_optimizer.selection_criteria.query = Evaluate(self.experiment.experiment_modules.query_selector.query_optimizer.selection_criteria.query)
+        self.experiment.experiment_modules.query_selector.query_optimizer.selection_criteria.query.warp(self.log_scores)
 
         self.experiment.run = Evaluate(self.experiment.run)
         self.experiment.run.post(self.log_results)
@@ -240,7 +227,7 @@ class LogScoresEvaluator(LogingEvaluator):
 
     def log_scores(self, func, queries: NDArray):
         
-        scores = func(queries)
+        queries, scores = func(queries)
 
         size = queries.shape[0] // 2
         test_queries = np.reshape(queries, (size,2,-1))
@@ -248,10 +235,10 @@ class LogScoresEvaluator(LogingEvaluator):
 
         self.pqs.append((test_queries, test_scores))
         
-        return scores
+        return queries, scores
 
     def log_results(self, exp_nr):
-        np.save(f'{self.path}/{self.file_name}_{exp_nr:05d}.npy', self.pqs)
+        np.save(f'{self.path}/{self.file_name}_{exp_nr:05d}.npy', self.pqs) #TODO
 
 @dataclass
 class LogActualQueryScoresEvaluator(LogingEvaluator):
@@ -264,8 +251,8 @@ class LogActualQueryScoresEvaluator(LogingEvaluator):
     def register(self, experiment: Experiment):
         super().register(experiment)
 
-        self.experiment.query_optimizer.select = Evaluate(self.experiment.query_optimizer.select)
-        self.experiment.query_optimizer.select.post(self.log_queries)
+        self.experiment.experiment_modules.query_selector.query_optimizer.select = Evaluate(self.experiment.experiment_modules.query_selector.query_optimizer.select)
+        self.experiment.experiment_modules.query_selector.query_optimizer.select.post(self.log_queries)
 
         self.experiment.run = Evaluate(self.experiment.run)
         self.experiment.run.post(self.log_results)
