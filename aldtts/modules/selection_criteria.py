@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Type
 from dataclasses import dataclass, field
 
 import numpy as np
-from alts.core.data.data_pool import DataPool
 
 from alts.core.query.selection_criteria import SelectionCriteria
 from alts.modules.query.selection_criteria import NoSelectionCriteria
@@ -25,7 +24,7 @@ class QueryTestNoSelectionCritera(NoSelectionCriteria):
     
     @property
     def query_constrain(self):
-        return self.dependency_test.data_sampler.query_constrain
+        return self.dependency_test.data_sampler.query_constrain()
 
     
     def __call__(self, exp_modules = None, **kwargs) -> Self:
