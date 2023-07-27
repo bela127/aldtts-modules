@@ -23,8 +23,13 @@ class DependencyExperiment(InitQueryExperimentModules):
 
     initial_query_sampler: QuerySampler = LatinHypercubeQuerySampler(num_queries=10)
 
-    def __post_init__(self):
-        super().__post_init__()
+    def step(self, iteration):
+        super().step(iteration)
+        t,p = self.dependency_test.test()
+        return t,p
+
+    def post_init(self):
+        super().post_init()
         self.dependency_test = self.dependency_test(exp_modules=self)
 
 
@@ -32,7 +37,7 @@ class DependencyExperiment(InitQueryExperimentModules):
 class InterventionDependencyExperiment(DependencyExperiment):
     test_interpolator: TestInterpolator = init()
 
-    def __post_init__(self):
-        super().__post_init__()
+    def post_init(self):
+        super().post_init()
         self.test_interpolator = self.test_interpolator(self)
 

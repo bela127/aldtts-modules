@@ -34,16 +34,14 @@ if TYPE_CHECKING:
     from aldtts.core.dependency_measure import DependencyMeasure
 
 
-
-
 @dataclass
 class SampleTest(DependencyTest):
     query_sampler: QuerySampler = init()
     data_sampler: DataSampler = init()
     multi_sample_test : MultiSampleTest = init()
 
-    def __post_init__(self):
-        super().__post_init__()
+    def post_init(self):
+        super().post_init()
         self.data_sampler = self.data_sampler(exp_modules = self.exp_modules)
         self.multi_sample_test = self.multi_sample_test()
         self.query_sampler = self.query_sampler(exp_modules=self.exp_modules)
@@ -63,11 +61,11 @@ class DependencyMeasureTest(DependencyTest):
     dependency_measure: DependencyMeasure = init()
     distribution: Dict = pre_init(default_factory=dict)
     scores: list = pre_init(default_factory=list)
-    iterations: int = init(default=0)
+    iterations: int = init(default=100)
     
-    def __init__(self, dependency_measure: DependencyMeasure, iterations:int = 100):
-        self.dependency_measure = dependency_measure
-        self.iterations = iterations
+    def post_init(self):
+        super().post_init()
+        self.dependency_measure = self.dependency_measure(self.exp_modules)
 
     def calc_p_value(self,t):
         greater = sum([v for k,v in self.distribution.items() if k >= t])
