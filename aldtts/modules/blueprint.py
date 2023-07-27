@@ -11,15 +11,16 @@ from alts.core.oracle.oracles import POracles
 from alts.modules.oracle.query_queue import FCFSQueryQueue
 from alts.modules.data_process.time_source import IterationTimeSource
 from alts.modules.stopping_criteria import TimeStoppingCriteria
-from aldtts.modules.evaluator import LogPValueEvaluator
+from aldtts.modules.evaluator import LogPValueEvaluator, LogScoresEvaluator, LogActualQueryScoresEvaluator
+from alts.modules.evaluator import LogResultEvaluator, LogOracleEvaluator
 from alts.modules.oracle.augmentation import NoiseAugmentation
 from aldtts.modules.experiment_modules import DependencyExperiment
 from alts.modules.data_sampler import KDTreeKNNDataSampler, KDTreeRegionDataSampler
-from alts.modules.query.query_sampler import LastQuerySampler, RandomChoiceQuerySampler, UniformQuerySampler, LatinHypercubeQuerySampler
+from alts.modules.query.query_sampler import AllResultPoolQuerySampler, UniformQuerySampler, LatinHypercubeQuerySampler
 from aldtts.modules.multi_sample_test import KWHMultiSampleTest
 from aldtts.modules.dependency_test import SampleTest
 from alts.core.query.query_selector import ResultQuerySelector
-from alts.modules.query.query_decider import ThresholdQueryDecider
+from alts.modules.query.query_decider import AllQueryDecider
 from alts.modules.query.query_optimizer import NoQueryOptimizer
 from aldtts.modules.selection_criteria import QueryTestNoSelectionCritera
 
@@ -49,14 +50,14 @@ class DTBlueprint(Blueprint):
                 selection_criteria= QueryTestNoSelectionCritera(),
                 query_sampler=UniformQuerySampler(num_queries = 4),
             ),
-            query_decider=ThresholdQueryDecider(threshold=0.0),
+            query_decider=AllQueryDecider(),
             ),
         dependency_test=SampleTest(
-            query_sampler = LastQuerySampler(),
+            query_sampler = AllResultPoolQuerySampler(),
             data_sampler = KDTreeRegionDataSampler(0.05),
             multi_sample_test=KWHMultiSampleTest()
             ),
     )
 
 
-    evaluators: Iterable[Evaluator] =(LogPValueEvaluator(),)
+    evaluators: Iterable[Evaluator] =(LogPValueEvaluator(),LogScoresEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualQueryScoresEvaluator()) 
