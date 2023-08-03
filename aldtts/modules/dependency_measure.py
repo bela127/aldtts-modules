@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-import subprocess
 from nptyping import NDArray
 import dcor
 
 import numpy as np
-import pandas as pd
 
 from aldtts.core.dependency_measure import DependencyMeasure
 
@@ -115,45 +113,5 @@ class dCor(DependencyMeasure):
         x, y = samples[0], samples[1:] 
         r = dcor.distance_correlation(samples,samples)
         return r
-@dataclass
-class CMI(DependencyMeasure):
 
-    def apply(self, samples):
-        x = np.asarray([item.tolist() for sublist in samples for item in sublist])
 
-        dataFile = 'run_data_store/cmiData.csv'
-        df = pd.DataFrame(x)
-        df.to_csv(dataFile, sep=",", header=['true'], index=False)
-
-        #output = subprocess.check_output('java -jar target/scala-2.12/MCDE-experiments-1.0.jar -t EstimateDependency -f src/test/resources/data/Independent-5-0.0.csv -a CMI -m 1 -p 1')
-        output = subprocess.check_output('java -jar target/scala-2.12/MCDE-experiments-1.0.jar -t EstimateDependency -f run_data_store/cmiData.csv -a CMI')
-        score = float(output.splitlines()[5])
-        
-        return score
-
-@dataclass
-class HiCS(DependencyMeasure):
-
-    def apply(self, samples: NDArray):
-        x = np.asarray([item.tolist() for sublist in samples for item in sublist])
-        dataFile = 'run_data_store/hicsData.csv'
-        df = pd.DataFrame(x)
-        df.to_csv(dataFile, sep=",", header=['true'], index=False)
-
-        output = subprocess.check_output('java -jar target/scala-2.12/MCDE-experiments-1.0.jar -t EstimateDependency -f run_data_store/hicsData.csv -a HiCS')
-        score = float(output.splitlines()[5])
-        return score
-
-@dataclass
-class MCDE(DependencyMeasure):
-
-    def apply(self, samples: NDArray):
-        x = np.asarray([item.tolist() for sublist in samples for item in sublist])
-        dataFile = 'run_data_store/mcdeData.csv'
-        df = pd.DataFrame(x)
-        df.to_csv(dataFile, sep=",", header=['true'], index=False)
-
-        #output = subprocess.check_output('java -jar target/scala-2.12/MCDE-experiments-1.0.jar -t EstimateDependency -f src/test/resources/data/Independent-5-0.0.csv -a MWP -m 1 -p 1')
-        output = subprocess.check_output('java -jar target/scala-2.12/MCDE-experiments-1.0.jar -t EstimateDependency -f run_data_store/mcdeData.csv -a MWP -m 1 -p 1')
-        score = float(output.splitlines()[5])
-        return score

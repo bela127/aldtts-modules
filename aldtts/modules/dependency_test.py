@@ -16,6 +16,7 @@ from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 from scipy.stats import kendalltau
 from scipy.stats import chi2_contingency
+from scipy.stats import ttest_1samp
 import numpy as np
 import pandas as pd
 from sklearn.utils import resample, shuffle
@@ -24,6 +25,14 @@ from alts.core.configuration import init, post_init, pre_init
 from aldtts.core.dependency_test import DependencyTest
 
 from aldtts.modules.XtendedCorrel import hoeffding
+
+from hyppo.independence.dcorr import Dcorr
+from hyppo.independence.hsic import Hsic
+from hyppo.independence.hhg import HHG
+from hyppo.independence.mgc import MGC
+from hyppo.independence.kmerf import KMERF
+from hyppo.independence.base import IndependenceTest
+from hyppo.tools.common import perm_test
 
 if TYPE_CHECKING:
     from typing import Dict
@@ -85,14 +94,14 @@ class DependencyMeasureTest(DependencyTest):
         self.scores.append(self.dependency_measure.apply(samples))
         
         for i in range(1,self.iterations):
-            samples = tuple(shuffle(x) for x in samples) #DevSkim: ignore DS148264 
+            samples = tuple(shuffle(x) for x in samples)
             self.scores.append(self.dependency_measure.apply(samples))
 
         self.distribution = {item:self.scores.count(item) for item in self.scores}
 
         t, p, v = self.executeTest(samples)
 
-        return t, p, v
+        return t, p
 
     def executeTest(self, samples):
         t = self.dependency_measure.apply(samples)
@@ -100,141 +109,144 @@ class DependencyMeasureTest(DependencyTest):
         v = self.calc_var()
         return t,p,v 
 
+    @property
+    @classmethod
+    def __name__(cls):
+        return f"{super().__name__}{np.random.uniform(0,1):04d}"
+    
+
+    
 @dataclass
 class Pearson(DependencyTest):
 
     def test(self):
         results = self.data_pools.result.results
-        x = [item for sublist in results for item in sublist]
-        t, p = pearsonr(x, x)
-        return t,p,0
+        quries = self.data_pools.result.queries
+        
+        x = quries.flatten()
+        y = results.flatten()
+        t, p = pearsonr(x, y)
+        return np.asarray([t]), np.asarray([p])
+
 @dataclass
 class Spearmanr(DependencyTest):
 
     def test(self):
         results = self.data_pools.result.results
-        x = [item for sublist in results for item in sublist]
-        t, p = spearmanr(x, x)
-        return t,p,0
-@dataclass
+        quries = self.data_pools.result.queries
+        
+        x = quries.flatten()
+        y = results.flatten()
+        t, p = spearmanr(x, y)
+        return np.asarray([t]), np.asarray([p])
+
 class Kendalltau(DependencyTest):
 
     def test(self):
         results = self.data_pools.result.results
-        x = [item for sublist in results for item in sublist]
-        t, p = kendalltau(x, x)
-        return t,p,0
+        quries = self.data_pools.result.queries
+        
+        x = quries.flatten()
+        y = results.flatten()
+        t, p = kendalltau(x, y)
+        return np.asarray([t]), np.asarray([p])
 @dataclass
 class FIT(DependencyTest):
 
     def test(self):
-        queries = self.data_pools.result.queries
+        quries = self.data_pools.result.queries
+        results = self.data_pools.result.results
 
-        samples = self.data_pools.result.results
-        samples = np.array(samples)
-        p = fcit.test(samples, samples)
-        return 0,p,0
+        x = quries
+        y = results
+        p, d0_stats, d1_stats = fcit.test(x, y, plot_return=True)
+        t, _ = ttest_1samp(d0_stats / d1_stats, 1)
+        return np.asarray([t]), np.asarray([p])
 @dataclass
 class XiCor(DependencyTest):
 
     def test(self):
-        queries = self.data_pools.result.queries
+        quries = self.data_pools.result.queries
+        results = self.data_pools.result.results
 
-        samples = self.data_pools.result.results
-        x = [item for sublist in samples for item in sublist]
-        xi_obj = Xi(x,x)
-        #t = 0 if and only if X and Y are independent
+        x = quries.flatten()
+        y = results.flatten()
+
+        t, p = self.xi(x, y)
+        
+        return np.asarray([t]), np.asarray([p])
+    
+    def xi(self,a,b):
+        xi_obj = Xi(a,b)
         t = xi_obj.correlation
-        p = xi_obj.pval_asymptotic(ties=False, nperm=1000)      
-        return t, p, 0
+        p = xi_obj.pval_asymptotic(ties=False, nperm=100)
+        return t,p
 @dataclass
 class Hoeffdings(DependencyTest):
 
     def test(self):
         queries = self.data_pools.result.queries
+        results = self.data_pools.result.results
+        x = queries.flatten()
+        y = results.flatten()
+        
+        p = hoeffding(x, y)
+        t = 0  
+        return np.asarray([t]), np.asarray([p])
 
-        samples = self.data_pools.result.results
-        x = [item for sublist in samples for item in sublist]
-        y = [item for item in x]
-        samples = np.array(y)
-        p = hoeffding(samples,samples)    
-        return 0, p,0
 
 @dataclass
-class chi_square(DependencyTest):
+class hypoDcorr(DependencyTest):
 
     def test(self):
         queries = self.data_pools.result.queries
-
-        samples = self.data_pools.result.results
-        r, p, dof, expected = chi2_contingency(samples, samples)
-        return r,p,0
+        results = self.data_pools.result.results
+        x = queries.flatten()
+        y = results.flatten()
+        stat,pvalue = Dcorr().test(x,y,workers=-1,reps=1000)
+        return np.asarray([stat]), np.asarray([pvalue])
 
 @dataclass
-class A_dep_test(DependencyTest):
+class hypoHsic(DependencyTest):
 
     def test(self):
         queries = self.data_pools.result.queries
-
-        samples = self.data_pools.result.results
-        return 0, 0, 0
+        results = self.data_pools.result.results
+        x = queries.flatten()
+        y = results.flatten()
+        stat,pvalue = Hsic().test(x,y,workers=-1,reps=1000)
+        return np.asarray([stat]), np.asarray([pvalue])
 
 @dataclass
-class IndepTest(DependencyTest):
+class hypoHHG(DependencyTest):
 
     def test(self):
         queries = self.data_pools.result.queries
-
-        samples = self.data_pools.result.results
-        x = np.asarray([item.tolist() for sublist in samples for item in sublist])
-        dataFile = 'run_data_store/indepTestData.csv'
-        df = pd.DataFrame(x)
-        df.to_csv(dataFile, sep=",", header=['true'], index=False)
- 
-        command = 'Rscript'
-        path = 'C:/Users/maxig/ThesisActiveLearningFramework/data_efficient_dependency_estimation/r_scripts/IndepTest.r'
-        cmd = [command, path, '--vanilla'] 
-        if(len(x)>50):
-            output = subprocess.check_output(cmd)
-            line = next(x for x in output.splitlines() if x.startswith(b'[1]'))
-            p = float(line.split()[1])
-        else:
-            p = 0
-        return 0, p,0
+        results = self.data_pools.result.results
+        x = queries.flatten()
+        y = results.flatten()
+        stat,pvalue = HHG().test(x,y,workers=-1,reps=1000, auto=True)
+        return np.asarray([stat]), np.asarray([pvalue])
 
 @dataclass
-class CondIndTest(DependencyTest):
+class hypoMGC(DependencyTest):
 
     def test(self):
         queries = self.data_pools.result.queries
+        results = self.data_pools.result.results
+        x = queries.flatten()
+        y = results.flatten()
+        stat,pvalue,_ = MGC().test(x,y,workers=-1,reps=250)
+        return np.asarray([stat]), np.asarray([pvalue])
 
-        samples = self.data_pools.result.results
-        x = np.asarray([item.tolist() for sublist in samples for item in sublist])
-        dataFile = 'run_data_store/condIndTestData.csv'
-        df = pd.DataFrame(x)
-        df.to_csv(dataFile, sep=",", header=['true'], index=False)
-
-        output = subprocess.check_output(["Rscript",  "--vanilla", "C:/Users/maxig/ThesisActiveLearningFramework/data_efficient_dependency_estimation/r_scripts/CondIndTest.r"])
-        line = next(x for x in output.splitlines() if x.startswith(b'[1]'))
-        p = float(line.split()[1])
-        return 0, p, 0
 @dataclass
-class LISTest(DependencyTest):
+class hypoKMERF(DependencyTest):
 
     def test(self):
         queries = self.data_pools.result.queries
+        results = self.data_pools.result.results
+        x = queries.flatten()
+        y = results.flatten()
+        stat,pvalue,_ = KMERF().test(y,x,workers=-1,reps=1000)
+        return np.asarray([stat]), np.asarray([pvalue])
 
-        samples = self.data_pools.result.results
-        x = np.asarray([item.tolist() for sublist in samples for item in sublist])
-        dataFile = 'run_data_store/LISTestData.csv'
-        df = pd.DataFrame(x)
-        df.to_csv(dataFile, sep=",", header=['true'], index=False)
-
-        if(len(x)>20 and len(x)<200):
-            output = subprocess.check_output(["Rscript",  "--vanilla", "C:/Users/maxig/ThesisActiveLearningFramework/data_efficient_dependency_estimation/r_scripts/LISTest.r"])
-            p = float(output.splitlines()[5].split()[1])
-            t = float(output.splitlines()[8].split()[1])
-        else:
-            p = 0
-            t = 0
-        return t, p,0

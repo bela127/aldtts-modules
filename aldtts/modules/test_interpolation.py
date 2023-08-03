@@ -5,19 +5,23 @@ from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
 import numpy as np
-from alts.core.data.data_pool import DataPool
 
 from aldtts.core.test_interpolation import TestInterpolator
+from alts.core.configuration import init
 
 if TYPE_CHECKING:
     from typing_extensions import Self #type: ignore
-    from alts.core.data_sampler import DataSampler
+    from alts.core.data.data_sampler import DataSampler
 
 
 @dataclass
 class KNNTestInterpolator(TestInterpolator):
-    data_sampler: DataSampler
-    
+    data_sampler: DataSampler = init()
+
+    def post_init(self):
+        super().post_init()
+        self.data_sampler = self.data_sampler(exp_modules= self.exp_modules)
+
     def query(self, queries):
 
         queries1 = queries[:,0,:]
@@ -48,7 +52,3 @@ class KNNTestInterpolator(TestInterpolator):
     def data_pool(self) -> DataPool:
         return DataPool(self.query_pool, result_shape=(3,))
 
-    def __call__(self, exp_modules = None, **kwargs) -> Self:
-        obj = super().__call__(exp_modules, **kwargs)
-        obj.data_sampler = obj.data_sampler(exp_modules)
-        return obj

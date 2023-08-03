@@ -69,7 +69,7 @@ class PValueSelectionCriteria(TestSelectionCriteria):
 
         scores = np.repeat(score,2)
 
-        return scores
+        return queries, scores
     
 @dataclass
 class PValueUncertaintySelectionCriteria(TestSelectionCriteria):
@@ -88,7 +88,7 @@ class PValueUncertaintySelectionCriteria(TestSelectionCriteria):
 
         scores = np.repeat(score,2)
 
-        return scores
+        return queries, scores
 
 @dataclass
 class PValueDensitySelectionCriteria(TestSelectionCriteria):
@@ -106,7 +106,7 @@ class PValueDensitySelectionCriteria(TestSelectionCriteria):
 
         scores = np.repeat(score,2)
 
-        return scores
+        return queries, scores
 
 
 @dataclass
@@ -126,7 +126,7 @@ class TestScoreUncertaintySelectionCriteria(TestSelectionCriteria):
 
         scores = np.repeat(score,2)
 
-        return scores
+        return queries, scores
 
 @dataclass
 class TestScoreSelectionCriteria(TestSelectionCriteria):
@@ -144,7 +144,7 @@ class TestScoreSelectionCriteria(TestSelectionCriteria):
 
         scores = np.repeat(score,2)
 
-        return scores
+        return queries, scores
 
 @dataclass
 class OptimalSelectionCriteria(TestSelectionCriteria):
@@ -163,7 +163,7 @@ class OptimalSelectionCriteria(TestSelectionCriteria):
 
         scores = np.repeat(mean_score,2)
 
-        return scores
+        return queries, scores
 
     def __call__(self, exp_modules=None, **kwargs) -> Self:
         obj = super().__call__(exp_modules, **kwargs)

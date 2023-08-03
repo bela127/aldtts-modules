@@ -38,6 +38,7 @@ class InterventionDependencyExperiment(DependencyExperiment):
     test_interpolator: TestInterpolator = init()
 
     def post_init(self):
+        self.test_interpolator = self.test_interpolator(exp_modules = self)
         super().post_init()
-        self.test_interpolator = self.test_interpolator(self)
+        
 

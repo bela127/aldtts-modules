@@ -203,14 +203,14 @@ class LogPValueEvaluator(LogingEvaluator):
         self.ps.append(p[0])
 
     def log_test_results(self, exp_nr):
-        np.save(f'{self.path}/{self.file_name}_{exp_nr:05d}.npy', self.ps)
+        np.save(f'{self.path}/{self.file_name}.npy', self.ps)
 
     
 @dataclass
-class LogScoresEvaluator(LogingEvaluator):
+class LogPseudoScoresEvaluator(LogingEvaluator):
     interactive: bool = False
     folder: str = "log"
-    file_name: str = "PseudoQueryScore"
+    file_name: str = "PseudoQuery"
 
     pqs: List[Tuple[NDArray, NDArray]] = pre_init(default_factory=list)
 
@@ -238,13 +238,15 @@ class LogScoresEvaluator(LogingEvaluator):
         return queries, scores
 
     def log_results(self, exp_nr):
-        np.save(f'{self.path}/{self.file_name}_{exp_nr:05d}.npy', self.pqs) #TODO
+        queries, scores = tuple(zip(*self.pqs))
+        np.save(f'{self.path}/{self.file_name}_score.npy', scores)
+        np.save(f'{self.path}/{self.file_name}_query.npy', queries)
 
 @dataclass
-class LogActualQueryScoresEvaluator(LogingEvaluator):
+class LogActualScoresEvaluator(LogingEvaluator):
     interactive: bool = False
     folder: str = "log"
-    file_name:str = "ActualQueryScores"
+    file_name:str = "ActualQuery"
 
     acs: List[Tuple[NDArray, NDArray]] = pre_init(default_factory=list)
 
@@ -271,4 +273,6 @@ class LogActualQueryScoresEvaluator(LogingEvaluator):
         self.acs.append((queries, scores))
 
     def log_results(self, exp_nr):
-        np.save(f'{self.path}/{self.file_name}_{exp_nr:05d}.npy', self.acs)
+        queries, scores = tuple(zip(*self.acs))
+        np.save(f'{self.path}/{self.file_name}_score.npy', scores)
+        np.save(f'{self.path}/{self.file_name}_query.npy', queries)
