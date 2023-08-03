@@ -14,14 +14,13 @@ python = ">=3.8,<3.10"
 #alts-modules = { path = "/home/bela/Cloud/code/Git/alts-modules", develop = true }
 alts-modules = {git = "https://github.com/bela127/alts-modules.git"}
 aldtts-core = {git = "https://github.com/bela127/aldtts-core.git"}
-libclang = "<12.0"
-coloredlogs = "^15.0.1"
-ipython = "^8.0.1"
-matplotlib = "^3.5.1"
-nptyping = ">=2.0.0a1"
-scikit-learn = "^1.0.2"
-numpy = "^1.22.3"
-scipy = "1.8"
+dcor = "^0.5.3"
+fcit = "^1.2.0"
+xicor = "^1.0.1"
+pandas = "^2.0.3"
+bayesian-optimization = "^1.2.0"
+tbb = "^2021.10.0"
+hyppo = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
