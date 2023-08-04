@@ -9,7 +9,7 @@ import numpy as np
 from alts.core.query.selection_criteria import SelectionCriteria
 from alts.modules.query.selection_criteria import NoSelectionCriteria
 from aldtts.modules.experiment_modules import DependencyExperiment, InterventionDependencyExperiment
-from alts.core.configuration import post_init
+from alts.core.configuration import post_init, init
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -67,8 +67,6 @@ class PValueSelectionCriteria(TestSelectionCriteria):
 
         score = 1 - mean_p
 
-        #scores = np.repeat(score,2)
-
         return test_queries, score
     
 @dataclass
@@ -86,9 +84,24 @@ class PValueUncertaintySelectionCriteria(TestSelectionCriteria):
 
         score = u * self.explore_exploit_trade_of + (1 - mean_p) * (1 - self.explore_exploit_trade_of)
 
-        scores = np.repeat(score,2)
+        return test_queries, score
 
-        return queries, scores
+@dataclass
+class PValueSecondaryUncertaintySelectionCriteria(TestSelectionCriteria):
+
+    def query(self, queries):
+
+        size = queries.shape[0] // 2
+        test_queries = np.reshape(queries, (size,2,-1))
+
+        t, p, u = self.test_interpolator.query(test_queries)
+
+        mean_p = np.mean(p, axis=1) # value between 0...1
+        uncert = u # value between 0...1 (because of querry region size)
+
+        score = mean_p * 10 + 1 + uncert #score from p between 1...11 in addition 0...1 uncert
+
+        return test_queries, score
 
 @dataclass
 class PValueDensitySelectionCriteria(TestSelectionCriteria):
@@ -104,9 +117,7 @@ class PValueDensitySelectionCriteria(TestSelectionCriteria):
 
         score = (1 - mean_p) * u
 
-        scores = np.repeat(score,2)
-
-        return queries, scores
+        return test_queries, score
 
 
 @dataclass
@@ -124,9 +135,7 @@ class TestScoreUncertaintySelectionCriteria(TestSelectionCriteria):
 
         score = mean_t*self.explore_exploit_trade_of + u * (1 - self.explore_exploit_trade_of)
 
-        scores = np.repeat(score,2)
-
-        return queries, scores
+        return test_queries, score
 
 @dataclass
 class TestScoreSelectionCriteria(TestSelectionCriteria):
@@ -142,30 +151,27 @@ class TestScoreSelectionCriteria(TestSelectionCriteria):
 
         score = mean_t
 
-        scores = np.repeat(score,2)
-
-        return queries, scores
+        return test_queries, score
 
 @dataclass
 class OptimalSelectionCriteria(TestSelectionCriteria):
-    data_source: DataSource
+    data_source: DataSource = init()
+
+    def post_init(self):
+        super().post_init()
+        self.data_source = self.data_source()
 
     def query(self, queries):
 
         queries, results = self.data_source.query(queries)
 
         size = results.shape[0] // 2
+        test_queries = np.reshape(queries, (size,2,-1))
         test_results = np.reshape(results, (size,2,-1))
+
 
         score = np.abs(test_results[:,0,:] - test_results[:,1,:])
 
         mean_score = np.mean(score, axis=1)
 
-        scores = np.repeat(mean_score,2)
-
-        return queries, scores
-
-    def __call__(self, exp_modules=None, **kwargs) -> Self:
-        obj = super().__call__(exp_modules, **kwargs)
-        obj.data_source = obj.data_source()
-        return obj
+        return test_queries, mean_score
