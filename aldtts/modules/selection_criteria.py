@@ -3,6 +3,7 @@ import imp
 from typing import TYPE_CHECKING, Any, Type
 
 from dataclasses import dataclass, field
+from alts.core.data.constrains import QueryConstrain
 
 import numpy as np
 
@@ -40,10 +41,6 @@ class QueryTestNoSelectionCritera(NoSelectionCriteria):
 @dataclass
 class TestSelectionCriteria(SelectionCriteria):
     test_interpolator: Optional[TestInterpolator] = field(init=False, default=None)
-    
-    @property
-    def query_pool(self):
-        return self.test_interpolator.query_pool
 
     def __call__(self, exp_modules = None, **kwargs) -> Self:
         obj = super().__call__(exp_modules, **kwargs)
@@ -54,6 +51,9 @@ class TestSelectionCriteria(SelectionCriteria):
             raise ValueError()
 
         return obj
+    
+    def query_constrain(self) -> QueryConstrain:
+        return self.test_interpolator.query_constrain()
 
 class PValueSelectionCriteria(TestSelectionCriteria):
     def query(self, queries):

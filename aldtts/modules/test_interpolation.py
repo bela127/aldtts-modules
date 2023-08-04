@@ -3,6 +3,7 @@ from abc import abstractproperty
 from typing import TYPE_CHECKING
 
 from dataclasses import dataclass
+from alts.core.data.constrains import QueryConstrain, ResultConstrain
 
 import numpy as np
 
@@ -44,11 +45,10 @@ class KNNTestInterpolator(TestInterpolator):
         mean_dist = np.mean(np.concatenate((dists1,dists2), axis=1),axis=1)
         return mean_dist
 
-    @property
-    def query_pool(self):
-        return self.data_sampler.query_pool
+    def query_constrain(self) -> QueryConstrain:
+        return self.data_sampler.query_constrain()
+    
+    def result_constrain(self) -> ResultConstrain:
+        return ResultConstrain(shape=(3,))
 
-    @property
-    def data_pool(self) -> DataPool:
-        return DataPool(self.query_pool, result_shape=(3,))
 
