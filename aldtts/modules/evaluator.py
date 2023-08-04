@@ -229,11 +229,7 @@ class LogPseudoScoresEvaluator(LogingEvaluator):
         
         queries, scores = func(queries)
 
-        size = queries.shape[0] // 2
-        test_queries = np.reshape(queries, (size,2,-1))
-        test_scores = np.reshape(scores, (size,2,-1))
-
-        self.pqs.append((test_queries, test_scores))
+        self.pqs.append((queries, scores))
         
         return queries, scores
 
@@ -265,10 +261,6 @@ class LogActualScoresEvaluator(LogingEvaluator):
         queries: NDArray
         scores: NDArray
         queries, scores = result
-
-        size = queries.shape[0] // 2
-        queries = np.reshape(queries, (size, 2,-1))
-        scores = np.reshape(scores, (size, 2,-1))
 
         self.acs.append((queries, scores))
 
