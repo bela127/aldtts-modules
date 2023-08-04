@@ -79,8 +79,8 @@ def indep_exp(test: DependencyTest, test_int: TestInterpolator) -> InterventionD
                 query_selector=ResultQuerySelector(
                     query_optimizer=MaxMCQueryOptimizer(
                         selection_criteria=PValueSelectionCriteria(),
-                        query_sampler=UniformQuerySampler(num_queries=2),
-                        num_tries=1000
+                        query_sampler=LatinHypercubeQuerySampler(num_queries=2),
+                        num_tries=2000
                     ),
                     query_decider=UnpackAllQueryDecider(),
                     ),
