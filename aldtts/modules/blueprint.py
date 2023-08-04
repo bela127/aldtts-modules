@@ -25,6 +25,7 @@ from alts.modules.query.query_optimizer import NoQueryOptimizer, MaxMCQueryOptim
 from aldtts.modules.selection_criteria import QueryTestNoSelectionCritera, PValueSelectionCriteria
 from aldtts.modules.test_interpolation import KNNTestInterpolator
 from aldtts.modules.two_sample_test import MWUTwoSampleTest
+from aldtts.modules.query.query_decider import UnpackAllQueryDecider
 
 
 if TYPE_CHECKING:
@@ -78,10 +79,10 @@ def indep_exp(test: DependencyTest, test_int: TestInterpolator) -> InterventionD
                 query_selector=ResultQuerySelector(
                     query_optimizer=MaxMCQueryOptimizer(
                         selection_criteria=PValueSelectionCriteria(),
-                        query_sampler=UniformQuerySampler(num_queries=4),
+                        query_sampler=UniformQuerySampler(num_queries=2),
                         num_tries=1000
                     ),
-                    query_decider=AllQueryDecider(),
+                    query_decider=UnpackAllQueryDecider(),
                     ),
                 dependency_test=test,
                 test_interpolator = test_int,

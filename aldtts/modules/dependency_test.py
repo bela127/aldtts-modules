@@ -179,7 +179,7 @@ class XiCor(DependencyTest):
     def xi(self,a,b):
         xi_obj = Xi(a,b)
         t = xi_obj.correlation
-        p = xi_obj.pval_asymptotic(ties=False, nperm=100)
+        p = xi_obj.pval_asymptotic(ties=False, nperm=1000)
         return t,p
 @dataclass
 class Hoeffdings(DependencyTest):
@@ -236,7 +236,7 @@ class hypoMGC(DependencyTest):
         results = self.data_pools.result.results
         x = queries.flatten()
         y = results.flatten()
-        stat,pvalue,_ = MGC().test(x,y,workers=-1,reps=250)
+        stat,pvalue,_ = MGC().test(x,y,workers=-1,reps=1000)
         return np.asarray([stat]), np.asarray([pvalue])
 
 @dataclass

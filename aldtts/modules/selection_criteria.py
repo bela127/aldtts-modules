@@ -67,9 +67,9 @@ class PValueSelectionCriteria(TestSelectionCriteria):
 
         score = 1 - mean_p
 
-        scores = np.repeat(score,2)
+        #scores = np.repeat(score,2)
 
-        return queries, scores
+        return test_queries, score
     
 @dataclass
 class PValueUncertaintySelectionCriteria(TestSelectionCriteria):
