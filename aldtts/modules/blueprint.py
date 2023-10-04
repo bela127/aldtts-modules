@@ -16,13 +16,13 @@ from alts.modules.evaluator import LogResultEvaluator, LogOracleEvaluator, Print
 from alts.modules.oracle.augmentation import NoiseAugmentation
 from aldtts.modules.experiment_modules import DependencyExperiment, InterventionDependencyExperiment
 from alts.modules.data_sampler import KDTreeKNNDataSampler, KDTreeRegionDataSampler
-from alts.modules.query.query_sampler import AllResultPoolQuerySampler, UniformQuerySampler, LatinHypercubeQuerySampler
+from alts.modules.query.query_sampler import AllResultPoolQuerySampler, LastResultPoolQuerySampler, UniformQuerySampler, LatinHypercubeQuerySampler
 from aldtts.modules.multi_sample_test import KWHMultiSampleTest
 from aldtts.modules.dependency_test import SampleTest
 from alts.core.query.query_selector import ResultQuerySelector
 from alts.modules.query.query_decider import AllQueryDecider
 from alts.modules.query.query_optimizer import NoQueryOptimizer, MaxMCQueryOptimizer
-from aldtts.modules.selection_criteria import QueryTestNoSelectionCritera, PValueSelectionCriteria
+from aldtts.modules.selection_criteria import QueryTestNoSelectionCritera, PValueSelectionCriteria, OptimalSelectionCriteria
 from aldtts.modules.test_interpolation import KNNTestInterpolator
 from aldtts.modules.two_sample_test import MWUTwoSampleTest
 from aldtts.modules.query.query_decider import UnpackAllQueryDecider
@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from alts.core.data.data_pools import DataPools
     from aldtts.core.dependency_test import DependencyTest
     from aldtts.core.test_interpolation import TestInterpolator
+    from alts.core.oracle.data_source import DataSource
 
 
 def dep_exp(test: DependencyTest) -> DependencyExperiment:
@@ -54,7 +55,7 @@ def dep_exp(test: DependencyTest) -> DependencyExperiment:
             )
 @dataclass
 class DTBlueprint(Blueprint):
-    repeat: int = 50
+    repeat: int = 100
     time_source: TimeSource = IterationTimeSource()
     process: Process = DataSourceProcess(data_source=NoiseAugmentation(data_source=LineDataSource((2,),(1,)), noise_ratio=2.0))
     data_pools: DataPools = ResultDataPools(result= FlatQueriedDataPool())
@@ -71,7 +72,7 @@ class DTBlueprint(Blueprint):
         )
 
 
-    evaluators: Iterable[Evaluator] =(PrintExpTimeEvaluator(), LogPValueEvaluator(),LogPseudoScoresEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualScoresEvaluator()) 
+    evaluators: Iterable[Evaluator] =(PrintExpTimeEvaluator(), LogPValueEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualScoresEvaluator()) 
 
 
 def indep_exp(test: DependencyTest, test_int: TestInterpolator) -> InterventionDependencyExperiment:
@@ -88,9 +89,10 @@ def indep_exp(test: DependencyTest, test_int: TestInterpolator) -> InterventionD
                 test_interpolator = test_int,
             )
 
+
 @dataclass
 class IDTBlueprint(Blueprint):
-    repeat: int = 50
+    repeat: int = 100
     time_source: TimeSource = IterationTimeSource()
     process: Process = DataSourceProcess(data_source=NoiseAugmentation(data_source=LineDataSource((2,),(1,)), noise_ratio=2.0))
     data_pools: DataPools = ResultDataPools(result= FlatQueriedDataPool())
@@ -111,4 +113,71 @@ class IDTBlueprint(Blueprint):
         )
 
 
-    evaluators: Iterable[Evaluator] =(PrintExpTimeEvaluator(), LogPValueEvaluator(),LogPseudoScoresEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualScoresEvaluator()) 
+    evaluators: Iterable[Evaluator] =(PrintExpTimeEvaluator(), LogPValueEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualScoresEvaluator()) 
+
+
+def opt_indep_exp(test: DependencyTest, test_int: TestInterpolator, data_source: DataSource) -> InterventionDependencyExperiment:
+    return InterventionDependencyExperiment(
+                query_selector=ResultQuerySelector(
+                    query_optimizer=MaxMCQueryOptimizer(
+                        selection_criteria=OptimalSelectionCriteria(data_source=data_source),
+                        query_sampler=LatinHypercubeQuerySampler(num_queries=2),
+                        num_tries=2000
+                    ),
+                    query_decider=UnpackAllQueryDecider(),
+                    ),
+                dependency_test=test,
+                test_interpolator = test_int,
+            )
+
+@dataclass
+class OptIDTBlueprint(Blueprint):
+    repeat: int = 100
+    time_source: TimeSource = IterationTimeSource()
+    process: Process = DataSourceProcess(data_source=NoiseAugmentation(data_source=LineDataSource((2,),(1,)), noise_ratio=2.0))
+    data_pools: DataPools = ResultDataPools(result= FlatQueriedDataPool())
+    oracles: Oracles = POracles(process=FCFSQueryQueue())
+
+    stopping_criteria: StoppingCriteria = TimeStoppingCriteria(stop_time=300)
+
+    experiment_modules: ExperimentModules = opt_indep_exp(
+        test= SampleTest(
+            query_sampler = LastResultPoolQuerySampler(),
+            data_sampler = KDTreeRegionDataSampler(0.05),
+            multi_sample_test=KWHMultiSampleTest()
+        ),
+        test_int=KNNTestInterpolator(
+            test = MWUTwoSampleTest(),
+            data_sampler=KDTreeKNNDataSampler(),
+        ),
+        data_source=LineDataSource((2,),(1,))
+    )
+
+
+    evaluators: Iterable[Evaluator] =(PrintExpTimeEvaluator(), LogPValueEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualScoresEvaluator()) 
+
+
+@dataclass
+class IDTLastBlueprint(Blueprint):
+    repeat: int = 50
+    time_source: TimeSource = IterationTimeSource()
+    process: Process = DataSourceProcess(data_source=NoiseAugmentation(data_source=LineDataSource((2,),(1,)), noise_ratio=2.0))
+    data_pools: DataPools = ResultDataPools(result= FlatQueriedDataPool())
+    oracles: Oracles = POracles(process=FCFSQueryQueue())
+
+    stopping_criteria: StoppingCriteria = TimeStoppingCriteria(stop_time=300)
+
+    experiment_modules: ExperimentModules = indep_exp(
+        test= SampleTest(
+            query_sampler = LastResultPoolQuerySampler(),
+            data_sampler = KDTreeRegionDataSampler(0.05),
+            multi_sample_test=KWHMultiSampleTest()
+            ),
+        test_int=KNNTestInterpolator(
+            test = MWUTwoSampleTest(),
+            data_sampler=KDTreeKNNDataSampler(),
+            )
+        )
+
+
+    evaluators: Iterable[Evaluator] =(PrintExpTimeEvaluator(), LogPValueEvaluator(), LogResultEvaluator(), LogOracleEvaluator(), LogActualScoresEvaluator()) 
