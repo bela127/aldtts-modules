@@ -68,7 +68,7 @@ def hoeffding(*arg):
         dicoSless={np.nan:np.nan}
         Q=np.ones(N[0])
 
-        i=0;
+        i=0
         for r,s in np.nditer([R,S]):
             r=float(r)
             s=float(s)
